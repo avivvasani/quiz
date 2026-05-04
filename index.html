@@ -70,7 +70,7 @@
         <div class="text-center p-12 glass-card max-w-3xl w-full mx-auto">
             <h1 class="text-6xl font-black mb-4" style="color: var(--primary-green);">Market Mavericks</h1>
             <p class="text-2xl font-bold text-yellow-600 uppercase tracking-[0.4em] mb-12">Financial Literacy Quiz 2026</p>
-            <button onclick="startQuiz()" class="px-16 py-6 bg-green-800 text-white text-3xl font-black rounded-3xl hover:bg-green-900 shadow-2xl transition-all hover:scale-110 active:scale-95">
+            <button onclick="startQuiz()" class="px-16 py-8 bg-green-800 text-white text-3xl font-black rounded-3xl hover:bg-green-900 shadow-2xl transition-all hover:scale-110 active:scale-95">
                 BEGIN QUIZ
             </button>
         </div>
@@ -106,7 +106,6 @@
                 </div>
             </div>
 
-            <!-- Timer Area -->
             <div class="col-span-12 lg:col-span-4">
                 <div class="glass-card p-12 text-center">
                     <div class="relative flex items-center justify-center mx-auto mb-8">
@@ -127,7 +126,6 @@
         <div class="text-center p-12 text-white mx-auto">
             <h1 class="text-8xl font-black mb-8">FINISH</h1>
             <p class="text-3xl opacity-80 mb-12 uppercase tracking-widest font-bold">All questions have been completed.</p>
-            <!-- Fixed: Added transition and scale animations here -->
             <button onclick="location.reload()" class="px-16 py-8 bg-white text-green-900 text-3xl font-black rounded-3xl shadow-2xl transition-all hover:scale-110 active:scale-95 hover:bg-gray-100">
                 RESTART QUIZ
             </button>
@@ -209,8 +207,20 @@
         };
 
         function handleSelect(idx) {
-            currentSelected = [idx];
-            document.querySelectorAll('.option-btn').forEach((b, i) => b.classList.toggle('selected', i === idx));
+            const q = fullQuizData.questions[currentIdx];
+            if (q.type === "Multiple Choice") {
+                if (currentSelected.includes(idx)) {
+                    currentSelected = currentSelected.filter(i => i !== idx);
+                } else {
+                    currentSelected.push(idx);
+                }
+            } else {
+                currentSelected = [idx];
+            }
+            
+            document.querySelectorAll('.option-btn').forEach((b, i) => {
+                b.classList.toggle('selected', currentSelected.includes(i));
+            });
         }
 
         function startTimer(duration) {
@@ -230,15 +240,22 @@
             isValidationState = true;
             const q = fullQuizData.questions[currentIdx];
             const btns = document.querySelectorAll('.option-btn');
-            const isCorrect = JSON.stringify(currentSelected) === JSON.stringify(q.answer);
+            
+            // For multiple choice, check if sorted arrays match
+            const sortedSelected = [...currentSelected].sort();
+            const sortedAnswer = [...q.answer].sort();
+            const isCorrect = JSON.stringify(sortedSelected) === JSON.stringify(sortedAnswer);
             
             feedbackText.innerText = isCorrect ? "✓ Correct" : "✗ Incorrect";
             feedbackText.style.color = isCorrect ? "var(--correct)" : "var(--wrong)";
 
             btns.forEach((btn, i) => {
                 btn.classList.add('pointer-events-none');
-                if (q.answer.includes(i)) btn.classList.add('correct-reveal');
-                else if (currentSelected.includes(i)) btn.classList.add('wrong-reveal');
+                if (q.answer.includes(i)) {
+                    btn.classList.add('correct-reveal');
+                } else if (currentSelected.includes(i)) {
+                    btn.classList.add('wrong-reveal');
+                }
             });
 
             actionBtn.innerText = "Next Round →";
@@ -247,7 +264,7 @@
 
         actionBtn.onclick = () => {
             if (!isValidationState) {
-                if (currentSelected.length === 0) return alert("Select an option first!");
+                if (currentSelected.length === 0) return alert("Select at least one option!");
                 validateChoice();
             } else {
                 if (currentIdx < fullQuizData.questions.length - 1) {
