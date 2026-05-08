@@ -59,13 +59,20 @@
         .timer-ring { transition: stroke-dashoffset 1s linear; transform: rotate(-90deg); transform-origin: center; }
         .hidden-element { display: none !important; }
         
+        /* PULSE EFFECT FOR LAST 10 SECONDS */
+        .timer-pulse { animation: pulse-red 0.8s infinite; }
+        @keyframes pulse-red {
+            0% { transform: scale(1); color: #10b981; }
+            50% { transform: scale(1.1); color: #ef4444; }
+            100% { transform: scale(1); color: #10b981; }
+        }
+
         .fade-in { animation: fadeIn 0.5s ease-in-out; }
         @keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
     </style>
 </head>
 <body class="p-10">
 
-    <!-- START SCREEN -->
     <div id="start-screen" class="fixed inset-0 z-50 bg-white flex items-center justify-center fade-in">
         <div class="text-center p-12 glass-card max-w-3xl w-full mx-auto">
             <h1 class="text-6xl font-black mb-4" style="color: var(--primary-green);">Market Mavericks</h1>
@@ -76,7 +83,6 @@
         </div>
     </div>
 
-    <!-- MAIN INTERFACE -->
     <div id="main-interface" class="max-w-7xl w-full hidden-element fade-in">
         <header class="flex justify-between items-end mb-12 border-b-8 border-green-900 pb-6">
             <div>
@@ -95,11 +101,9 @@
 
                 <div class="flex justify-end gap-6 items-center px-4">
                     <div id="feedback-text" class="text-4xl font-black uppercase italic tracking-wider mr-auto"></div>
-                    
                     <button id="reveal-btn" class="px-10 py-6 bg-yellow-500 text-yellow-950 text-2xl font-black rounded-2xl hover:bg-yellow-400 shadow-lg transition-all hover:scale-105 active:scale-95">
                         REVEAL OPTIONS
                     </button>
-
                     <button id="action-btn" class="px-10 py-6 bg-green-800 text-white text-2xl font-black rounded-2xl hover:bg-green-900 shadow-xl transition-all hidden-element hover:scale-105 active:scale-95">
                         LOCK ANSWER
                     </button>
@@ -121,7 +125,6 @@
         </div>
     </div>
 
-    <!-- FINAL SCREEN -->
     <div id="end-screen" class="fixed inset-0 z-50 bg-green-900 flex items-center justify-center hidden-element fade-in">
         <div class="text-center p-12 text-white mx-auto">
             <h1 class="text-8xl font-black mb-8">FINISH</h1>
@@ -176,8 +179,10 @@
             actionBtn.innerText = "LOCK ANSWER";
             actionBtn.className = "px-10 py-6 bg-green-800 text-white text-2xl font-black rounded-2xl shadow-xl transition-all hover:scale-105 active:scale-95";
             
-            document.getElementById('timer-text').innerText = "--";
-            document.getElementById('timer-text').classList.add('text-gray-300');
+            const timerText = document.getElementById('timer-text');
+            timerText.innerText = "--";
+            timerText.classList.add('text-gray-300');
+            timerText.classList.remove('timer-pulse'); // Reset pulse
             document.getElementById('timer-circle').classList.replace('text-green-700', 'text-gray-200');
 
             const q = fullQuizData.questions[currentIdx];
@@ -207,17 +212,7 @@
         };
 
         function handleSelect(idx) {
-            const q = fullQuizData.questions[currentIdx];
-            if (q.type === "Multiple Choice") {
-                if (currentSelected.includes(idx)) {
-                    currentSelected = currentSelected.filter(i => i !== idx);
-                } else {
-                    currentSelected.push(idx);
-                }
-            } else {
-                currentSelected = [idx];
-            }
-            
+            currentSelected = [idx];
             document.querySelectorAll('.option-btn').forEach((b, i) => {
                 b.classList.toggle('selected', currentSelected.includes(i));
             });
@@ -227,27 +222,40 @@
             clearInterval(timerInterval);
             timeLeft = duration;
             const totalOffset = 628;
+            const timerText = document.getElementById('timer-text');
+
             timerInterval = setInterval(() => {
-                document.getElementById('timer-text').innerText = timeLeft;
+                timerText.innerText = timeLeft;
                 document.getElementById('timer-circle').style.strokeDashoffset = totalOffset - (timeLeft / duration) * totalOffset;
-                if (timeLeft <= 0) { clearInterval(timerInterval); validateChoice(); }
+                
+                // PULSE TRIGGER
+                if (timeLeft <= 10) timerText.classList.add('timer-pulse');
+                
+                if (timeLeft <= 0) { 
+                    clearInterval(timerInterval); 
+                    validateChoice(true); // TRIGGER TIME UP
+                }
                 timeLeft--;
             }, 1000);
         }
 
-        function validateChoice() {
+        function validateChoice(isTimeout = false) {
             clearInterval(timerInterval);
             isValidationState = true;
             const q = fullQuizData.questions[currentIdx];
             const btns = document.querySelectorAll('.option-btn');
             
-            // For multiple choice, check if sorted arrays match
-            const sortedSelected = [...currentSelected].sort();
-            const sortedAnswer = [...q.answer].sort();
-            const isCorrect = JSON.stringify(sortedSelected) === JSON.stringify(sortedAnswer);
-            
-            feedbackText.innerText = isCorrect ? "✓ Correct" : "✗ Incorrect";
-            feedbackText.style.color = isCorrect ? "var(--correct)" : "var(--wrong)";
+            // LOGIC FOR TIMEOUT VS SELECTION
+            if (isTimeout) {
+                feedbackText.innerText = "⚠ TIME UP";
+                feedbackText.style.color = "var(--wrong)";
+            } else {
+                const sortedSelected = [...currentSelected].sort();
+                const sortedAnswer = [...q.answer].sort();
+                const isCorrect = JSON.stringify(sortedSelected) === JSON.stringify(sortedAnswer);
+                feedbackText.innerText = isCorrect ? "✓ Correct" : "✗ Incorrect";
+                feedbackText.style.color = isCorrect ? "var(--correct)" : "var(--wrong)";
+            }
 
             btns.forEach((btn, i) => {
                 btn.classList.add('pointer-events-none');
@@ -264,7 +272,7 @@
 
         actionBtn.onclick = () => {
             if (!isValidationState) {
-                if (currentSelected.length === 0) return alert("Select at least one option!");
+                if (currentSelected.length === 0) return alert("Select an answer first!");
                 validateChoice();
             } else {
                 if (currentIdx < fullQuizData.questions.length - 1) {
