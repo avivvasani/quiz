@@ -1,0 +1,276 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Market Mavericks | Stage Portal</title>
+    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;600;700;800&display=swap" rel="stylesheet">
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        :root {
+            --primary-green: #008000; 
+            --correct: #22c55e;
+            --wrong: #ef4444;
+            --dark-bg: #020617; 
+            --card-bg: #0f172a; 
+        }
+        body {
+            font-family: 'Poppins', sans-serif;
+            background-color: var(--dark-bg);
+            color: #f1f5f9;
+            min-height: 100vh;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            overflow: hidden;
+            margin: 0;
+        }
+        .glass-card {
+            background: var(--card-bg);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            border-radius: 2rem;
+            box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.5);
+        }
+        .option-btn {
+            transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+            border: 2px solid rgba(255, 255, 255, 0.05);
+            background: rgba(255, 255, 255, 0.03);
+            text-align: left;
+            padding: 1.5rem 2rem;
+            border-radius: 1.25rem;
+            width: 100%;
+            font-weight: 700;
+            font-size: 1.4rem;
+            color: #94a3b8;
+        }
+        .option-btn:hover:not(.disabled) {
+            background: rgba(255, 255, 255, 0.08);
+            border-color: var(--primary-green);
+        }
+        .option-btn.selected {
+            border-color: var(--primary-green);
+            background: rgba(0, 128, 0, 0.15);
+            color: white;
+        }
+        .correct-reveal {
+            background-color: var(--correct) !important;
+            border-color: #15803d !important;
+            color: white !important;
+            box-shadow: 0 0 30px rgba(34, 197, 94, 0.3);
+        }
+        .wrong-reveal {
+            background-color: var(--wrong) !important;
+            border-color: #b91c1c !important;
+            color: white !important;
+        }
+        .timer-ring { transition: stroke-dashoffset 1s linear; transform: rotate(-90deg); transform-origin: center; }
+        .timer-pulse { animation: pulse-red 1s infinite; }
+        @keyframes pulse-red {
+            0% { color: #10b981; }
+            50% { color: #ef4444; transform: scale(1.05); }
+            100% { color: #10b981; }
+        }
+        .hidden-element { display: none !important; }
+    </style>
+</head>
+<body class="p-10">
+
+    <div id="start-screen" class="fixed inset-0 z-50 bg-[#020617] flex items-center justify-center">
+        <div class="text-center p-12 glass-card max-w-3xl w-full mx-auto border-green-900/30">
+            <h1 class="text-6xl font-black mb-4 bg-gradient-to-b from-green-400 to-green-700 bg-clip-text text-transparent">Market Mavericks</h1>
+            <p class="text-2xl font-bold text-slate-400 uppercase tracking-[0.4em] mb-12">Financial Literacy QUIZ 2026</p>
+            <button onclick="startQuiz()" class="px-16 py-8 bg-green-700 text-white text-3xl font-black rounded-3xl hover:bg-green-600 shadow-2xl transition-all active:scale-95">
+                BEGIN QUIZ
+            </button>
+        </div>
+    </div>
+
+    <div id="main-interface" class="max-w-7xl w-full hidden-element">
+        <header class="flex justify-between items-end mb-12 border-b-4 border-slate-800 pb-6">
+            <div>
+                <h1 class="text-6xl font-black tracking-tighter text-white">Market Mavericks</h1>
+                <p id="q-count" class="text-xl font-bold text-slate-500 uppercase tracking-widest mt-1"></p>
+            </div>
+            <div id="q-type-badge" class="px-6 py-2 bg-green-900/50 text-green-400 border border-green-500/30 text-sm font-black rounded-lg uppercase tracking-widest"></div>
+        </header>
+
+        <div class="grid grid-cols-12 gap-12 items-start">
+            <div class="col-span-12 lg:col-span-8 space-y-10">
+                <div class="glass-card p-12 min-h-[500px] flex flex-col justify-center border-slate-800/50">
+                    <h2 id="q-text" class="text-4xl font-extrabold leading-tight mb-12 text-slate-100"></h2>
+                    <div id="options-container" class="grid grid-cols-1 gap-6 hidden-element"></div>
+                </div>
+
+                <div class="flex justify-end gap-6 items-center px-4">
+                    <div id="feedback-text" class="text-4xl font-black uppercase italic tracking-wider mr-auto"></div>
+                    <button id="reveal-btn" class="px-10 py-6 bg-slate-100 text-slate-900 text-2xl font-black rounded-2xl hover:bg-white shadow-lg transition-all active:scale-95">
+                        REVEAL OPTIONS
+                    </button>
+                    <button id="action-btn" class="px-10 py-6 bg-green-800 text-white text-2xl font-black rounded-2xl shadow-xl transition-all hidden-element active:scale-95">
+                        LOCK ANSWER
+                    </button>
+                </div>
+            </div>
+
+            <div class="col-span-12 lg:col-span-4">
+                <div class="glass-card p-12 text-center border-slate-800/50">
+                    <div class="relative flex items-center justify-center mx-auto mb-8">
+                        <svg class="w-56 h-56">
+                            <circle class="text-slate-800" stroke-width="12" stroke="currentColor" fill="transparent" r="100" cx="112" cy="112"/>
+                            <circle id="timer-circle" class="text-green-500 timer-ring" stroke-width="12" stroke-dasharray="628" stroke-dashoffset="0" stroke-linecap="round" stroke="currentColor" fill="transparent" r="100" cx="112" cy="112"/>
+                        </svg>
+                        <span id="timer-text" class="absolute text-7xl font-black text-slate-600">--</span>
+                    </div>
+                    <p class="text-lg font-black text-slate-500 uppercase tracking-widest">Countdown</p>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div id="end-screen" class="fixed inset-0 z-50 bg-[#020617] flex items-center justify-center hidden-element">
+        <div class="text-center p-12 text-white mx-auto">
+            <h1 class="text-8xl font-black mb-8 text-green-500">FINISH</h1>
+            <button onclick="location.reload()" class="px-16 py-8 bg-white text-slate-900 text-3xl font-black rounded-3xl shadow-2xl transition-all active:scale-95">
+                RESTART SESSION
+            </button>
+        </div>
+    </div>
+
+    <script>
+        const fullQuizData = {
+            "questions": [
+                { "type": "Single Choice", "question": "Which of the following is a primary function of the Reserve Bank of India (RBI)?", "options": ["Issuing passports", "Controlling inflation and money supply", "Collecting income tax", "The oversight and governance of financial markets"], "answer": [1], "timeLimit": 60 },
+                { "type": "Single Choice", "question": "If you invest ₹10,000 at a simple interest rate of 10% per year, how much interest earned in 2 years?", "options": ["₹1,000", "₹2,000", "₹2,100", "₹3,000"], "answer": [1], "timeLimit": 60 },
+                { "type": "Single Choice", "question": "What does 'inflation' mean in economics?", "options": ["A rise in a country's GDP", "General increase in price of goods and services", "Decrease in total export value", "Increase in government spending"], "answer": [1], "timeLimit": 45 },
+                { "type": "Single Choice", "question": "A Fixed Deposit (FD) is best described as:", "options": ["A loan given by a bank to a customer", "Investment locked for a fixed period at fixed interest", "A type of current account", "A government savings scheme for women only"], "answer": [1], "timeLimit": 45 },
+                { "type": "Single Choice", "question": "Which document is required to open a bank account in India under KYC norms?", "options": ["Ration card only", "Proof of identity and proof of address", "Tax department tracking card", "Birth certificate"], "answer": [1], "timeLimit": 45 },
+                { "type": "Single Choice", "question": "What is a 'budget' in personal finance?", "options": ["A type of bank account", "Plan outlining expected income and expenses", "Timetable for periodic debt payments", "Record for annual tax liability calculation"], "answer": [1], "timeLimit": 60 },
+                { "type": "Single Choice", "question": "Which of the following is an example of a liquid asset?", "options": ["Real estate", "5-year Fixed Deposit", "Savings account balance", "Gold jewellery"], "answer": [2], "timeLimit": 45 },
+                { "type": "Single Choice", "question": "The BSE SENSEX is:", "options": ["Investment vehicle pooling capital", "Index tracking 30 large companies listed on BSE", "Secure debt instrument issued by the state", "Index representing fifty largest national stocks"], "answer": [1], "timeLimit": 60 },
+                { "type": "Single Choice", "question": "What does 'diversification' mean in investing?", "options": ["Putting all your money in one stock", "Spreading investments across assets to reduce risk", "Withdrawing money from multiple banks", "Focusing on sovereign debt instruments"], "answer": [1], "timeLimit": 60 },
+                { "type": "Single Choice", "question": "GST (Goods and Services Tax) in India is an example of:", "options": ["A direct tax", "An income tax", "An indirect tax", "A wealth tax"], "answer": [2], "timeLimit": 45 }
+            ]
+        };
+
+        let currentIdx = 0;
+        let timerInterval;
+        let timeLeft;
+        let currentSelected = [];
+        let isValidationState = false;
+
+        const actionBtn = document.getElementById('action-btn');
+        const revealBtn = document.getElementById('reveal-btn');
+        const feedbackText = document.getElementById('feedback-text');
+        const optionsContainer = document.getElementById('options-container');
+
+        function startQuiz() {
+            document.getElementById('start-screen').classList.add('hidden-element');
+            document.getElementById('main-interface').classList.remove('hidden-element');
+            renderQuestion();
+        }
+
+        function renderQuestion() {
+            isValidationState = false;
+            currentSelected = [];
+            feedbackText.innerText = "";
+            optionsContainer.classList.add('hidden-element');
+            revealBtn.classList.remove('hidden-element');
+            actionBtn.classList.add('hidden-element');
+            actionBtn.innerText = "LOCK ANSWER";
+            actionBtn.className = "px-10 py-6 bg-green-800 text-white text-2xl font-black rounded-2xl shadow-xl transition-all";
+            
+            const timerDisplay = document.getElementById('timer-text');
+            timerDisplay.innerText = "--";
+            timerDisplay.classList.remove('timer-pulse');
+            timerDisplay.style.color = "#475569";
+            document.getElementById('timer-circle').style.strokeDashoffset = 0;
+
+            const q = fullQuizData.questions[currentIdx];
+            document.getElementById('q-text').innerText = q.question;
+            document.getElementById('q-type-badge').innerText = q.type;
+            document.getElementById('q-count').innerText = `Question ${currentIdx + 1} of ${fullQuizData.questions.length}`;
+
+            optionsContainer.innerHTML = '';
+            q.options.forEach((opt, i) => {
+                const btn = document.createElement('button');
+                btn.className = 'option-btn';
+                btn.innerHTML = `<span class="mr-6 text-slate-700 font-black">${String.fromCharCode(65 + i)}.</span> ${opt}`;
+                btn.onclick = () => { if(!isValidationState) handleSelect(i); };
+                optionsContainer.appendChild(btn);
+            });
+        }
+
+        revealBtn.onclick = () => {
+            optionsContainer.classList.remove('hidden-element');
+            revealBtn.classList.add('hidden-element');
+            actionBtn.classList.remove('hidden-element');
+            document.getElementById('timer-text').style.color = "#10b981";
+            startTimer(fullQuizData.questions[currentIdx].timeLimit);
+        };
+
+        function handleSelect(idx) {
+            currentSelected = [idx];
+            document.querySelectorAll('.option-btn').forEach((b, i) => b.classList.toggle('selected', currentSelected.includes(i)));
+        }
+
+        function startTimer(duration) {
+            clearInterval(timerInterval);
+            timeLeft = duration;
+            const timerDisplay = document.getElementById('timer-text');
+            
+            timerInterval = setInterval(() => {
+                timerDisplay.innerText = timeLeft;
+                document.getElementById('timer-circle').style.strokeDashoffset = 628 - (timeLeft / duration) * 628;
+                
+                if (timeLeft <= 10) timerDisplay.classList.add('timer-pulse');
+                
+                if (timeLeft <= 0) { 
+                    clearInterval(timerInterval); 
+                    validateChoice(true); 
+                }
+                timeLeft--;
+            }, 1000);
+        }
+
+        function validateChoice(isTimeout = false) {
+            clearInterval(timerInterval);
+            isValidationState = true;
+            const q = fullQuizData.questions[currentIdx];
+            const btns = document.querySelectorAll('.option-btn');
+            
+            if (isTimeout) {
+                feedbackText.innerText = "⚠ TIME UP";
+                feedbackText.style.color = "var(--wrong)";
+            } else {
+                const isCorrect = currentSelected.length > 0 && q.answer.includes(currentSelected[0]);
+                feedbackText.innerText = isCorrect ? "✓ CORRECT" : "✗ INCORRECT";
+                feedbackText.style.color = isCorrect ? "var(--correct)" : "var(--wrong)";
+            }
+
+            btns.forEach((btn, i) => {
+                btn.classList.add('pointer-events-none');
+                if (q.answer.includes(i)) btn.classList.add('correct-reveal');
+                else if (currentSelected.includes(i)) btn.classList.add('wrong-reveal');
+            });
+
+            actionBtn.innerText = "Next Round →";
+            actionBtn.className = "px-10 py-6 bg-blue-600 text-white text-2xl font-black rounded-2xl shadow-xl transition-all";
+        }
+
+        actionBtn.onclick = () => {
+            if (!isValidationState) {
+                if (currentSelected.length === 0) return;
+                validateChoice();
+            } else {
+                if (currentIdx < fullQuizData.questions.length - 1) {
+                    currentIdx++;
+                    renderQuestion();
+                } else {
+                    document.getElementById('main-interface').classList.add('hidden-element');
+                    document.getElementById('end-screen').classList.remove('hidden-element');
+                }
+            }
+        };
+    </script>
+</body>
+</html>
